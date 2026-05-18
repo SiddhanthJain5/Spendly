@@ -3,7 +3,11 @@
     "allow": [
       "Bash(venv/bin/pip install *)",
       "Bash(venv/bin/python3 *)",
-      "Bash(git init *)"
+      "Bash(git init *)",
+      "WclaudeebSearch",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
