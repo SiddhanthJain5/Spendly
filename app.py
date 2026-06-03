@@ -1,7 +1,7 @@
 import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.db import init_db, seed_db, create_user, get_user_by_email
+from database.db import init_db, seed_db, create_user, get_user_by_email, get_user_by_id, get_expense_summary, get_expenses_by_category, get_recent_expenses
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-production"
@@ -58,7 +58,21 @@ def login():
     if not user or not check_password_hash(user["password_hash"], password):
         return render_template("login.html", error="Invalid email or password.")
 
-    session["user_id"] = user["id"]
+    session["user_id"]   = user["id"]
+    session["user_name"] = user["name"]
+    return redirect(url_for("profile"))
+
+
+# ------------------------------------------------------------------ #
+# Dev convenience — remove before production                          #
+# ------------------------------------------------------------------ #
+
+@app.route("/dev/autologin")
+def dev_autologin():
+    user = get_user_by_email("demo@spendly.com")
+    if user:
+        session["user_id"]   = user["id"]
+        session["user_name"] = user["name"]
     return redirect(url_for("profile"))
 
 
@@ -79,12 +93,22 @@ def privacy():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("login"))
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+    from datetime import datetime
+    user            = get_user_by_id(session["user_id"])
+    summary         = get_expense_summary(session["user_id"])
+    categories      = get_expenses_by_category(session["user_id"])
+    recent_expenses = get_recent_expenses(session["user_id"])
+    member_since    = datetime.strptime(user["created_at"][:7], "%Y-%m").strftime("%B %Y")
+    return render_template("profile.html", user=user, summary=summary,
+                           categories=categories, recent_expenses=recent_expenses,
+                           member_since=member_since)
 
 
 @app.route("/expenses/add")

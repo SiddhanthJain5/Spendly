@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+{% if categories %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<section class="profile-section">
+    <div class="profile-container">
+
+        <!-- ── Header card ─────────────────────────────────────────── -->
+        <div class="profile-header-card">
+            <div class="profile-avatar">{{ user["name"][0].upper() }}</div>
+            <div class="profile-meta">
+                <h1 class="profile-name">{{ user["name"] }}</h1>
+                <p class="profile-email">{{ user["email"] }}</p>
+                <p class="profile-since">
+                    <i data-lucide="calendar"></i>
+                    Member since {{ member_since }}
+                </p>
+            </div>
+        </div>
+
+        <!-- ── Stats row ───────────────────────────────────────────── -->
+        <div class="profile-stats {% if not categories %}profile-stats--empty{% endif %}">
+            <div class="stat-card">
+                <div class="stat-icon"><i data-lucide="receipt"></i></div>
+                <div class="stat-value">{{ summary.total_count }}</div>
+                <div class="stat-label">Expenses Logged</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i data-lucide="trending-down"></i></div>
+                <div class="stat-value">₹{{ "%.2f"|format(summary.total_amount) }}</div>
+                <div class="stat-label">Total Spent</div>
+            </div>
+            {% if categories %}
+            <div class="stat-card">
+                <div class="stat-icon"><i data-lucide="tag"></i></div>
+                <div class="stat-value">{{ categories[0].category }}</div>
+                <div class="stat-label">Top Category</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if categories %}
+
+        <!-- ── Category breakdown ──────────────────────────────────── -->
+        <div class="profile-card">
+            <h2 class="card-title">
+                <i data-lucide="pie-chart"></i> Spending by Category
+            </h2>
+            <div class="chart-layout">
+                <div class="chart-wrap">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <ul class="category-list">
+                    {% for cat in categories %}
+                    <li class="category-row">
+                        <span class="cat-dot" data-cat="{{ cat.category }}"></span>
+                        <span class="cat-name">{{ cat.category }}</span>
+                        <span class="cat-bar-wrap">
+                            <span class="cat-bar" style="width: {{ (cat.total / summary.total_amount * 100)|round(1) }}%"></span>
+                        </span>
+                        <span class="cat-amount">₹{{ "%.2f"|format(cat.total) }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- ── Recent transactions ─────────────────────────────────── -->
+        <div class="profile-card">
+            <h2 class="card-title">
+                <i data-lucide="clock"></i> Recent Transactions
+            </h2>
+            <div class="txn-table">
+                <div class="txn-head">
+                    <span>Date</span>
+                    <span>Description</span>
+                    <span>Category</span>
+                    <span class="txn-amount-col">Spend</span>
+                </div>
+                {% for exp in recent_expenses %}
+                <div class="txn-row">
+                    <span class="txn-date">{{ exp.date }}</span>
+                    <span class="txn-desc">{{ exp.description or exp.category }}</span>
+                    <span class="txn-cat-badge cat-{{ exp.category | lower | replace(' ', '-') }}">
+                        {{ exp.category }}
+                    </span>
+                    <span class="txn-amount">₹{{ "%.2f"|format(exp.amount) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ── Quick actions ───────────────────────────────────────── -->
+        <div class="profile-actions">
+            <a href="{{ url_for('add_expense') }}" class="btn-primary">
+                <i data-lucide="plus-circle"></i> Add Expense
+            </a>
+        </div>
+
+        {% else %}
+
+        <!-- ── Get started (no expenses yet) ──────────────────────── -->
+        <div class="onboarding-card">
+            <div class="onboarding-icon">
+                <i data-lucide="wallet"></i>
+            </div>
+            <h2 class="onboarding-title">Start tracking your spending</h2>
+            <p class="onboarding-body">
+                You haven't logged any expenses yet. Add your first one and
+                Spendly will show you charts, breakdowns, and trends right here.
+            </p>
+            <div class="onboarding-features">
+                <div class="onboarding-feature">
+                    <i data-lucide="pie-chart"></i>
+                    <span>Category breakdown</span>
+                </div>
+                <div class="onboarding-feature">
+                    <i data-lucide="trending-down"></i>
+                    <span>Spending trends</span>
+                </div>
+                <div class="onboarding-feature">
+                    <i data-lucide="clock"></i>
+                    <span>Transaction history</span>
+                </div>
+            </div>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary onboarding-cta">
+                <i data-lucide="plus-circle"></i> Add your first expense
+            </a>
+        </div>
+
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+lucide.createIcons();
+
+{% if categories %}
+const CATEGORY_COLORS = {
+    "Food":          "#FF6B6B",
+    "Transport":     "#4ECDC4",
+    "Bills":         "#85C1E9",
+    "Health":        "#FF8B94",
+    "Entertainment": "#A8E6CF",
+    "Shopping":      "#FFE66D",
+    "Other":         "#C39BD3",
+};
+
+const cats   = {{ categories | map(attribute='category') | list | tojson }};
+const totals = {{ categories | map(attribute='total')    | list | tojson }};
+const colors = cats.map(c => CATEGORY_COLORS[c] || "#cccccc");
+
+document.querySelectorAll(".cat-dot").forEach(el => {
+    el.style.background = CATEGORY_COLORS[el.dataset.cat] || "#cccccc";
+});
+
+new Chart(document.getElementById("categoryChart"), {
+    type: "doughnut",
+    data: {
+        labels: cats,
+        datasets: [{
+            data: totals,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: "#ffffff",
+            hoverOffset: 6,
+        }]
+    },
+    options: {
+        cutout: "65%",
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ₹${ctx.parsed.toFixed(2)}`
+                }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}
