@@ -84,7 +84,7 @@ def get_expenses_by_category(user_id):
         conn.close()
 
 
-def get_recent_expenses(user_id, limit=5):
+def get_recent_expenses(user_id, limit=10):
     conn = get_db()
     try:
         rows = conn.execute(
