@@ -1,4 +1,7 @@
+import re
 import sqlite3
+import calendar
+from datetime import date, datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from database.db import init_db, seed_db, create_user, get_user_by_email, get_user_by_id, get_expense_summary, get_expenses_by_category, get_recent_expenses
@@ -96,19 +99,87 @@ def logout():
     return redirect(url_for("landing"))
 
 
+def _parse_date(s):
+    if not s or not re.match(r'^\d{4}-\d{2}-\d{2}$', s):
+        return None
+    try:
+        datetime.strptime(s, "%Y-%m-%d")
+        return s
+    except ValueError:
+        return None
+
+
+def _fmt_date(iso):
+    return datetime.strptime(iso, "%Y-%m-%d").strftime("%d %b %Y")
+
+
+def _build_preset_dates():
+    today = date.today()
+    # this month
+    first_this = today.replace(day=1)
+    last_this  = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+    # last month
+    last_last  = first_this - timedelta(days=1)
+    first_last = last_last.replace(day=1)
+    # last 3 months: from the 1st of the month 3 months ago up to today
+    # go back month by month
+    m, y = today.month, today.year
+    for _ in range(2):
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    first_3m = date(y, m, 1)
+    return {
+        "this_month":    (first_this.isoformat(),  last_this.isoformat()),
+        "last_month":    (first_last.isoformat(),  last_last.isoformat()),
+        "last_3_months": (first_3m.isoformat(),    today.isoformat()),
+    }
+
+
 @app.route("/profile")
 def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
-    from datetime import datetime
+
+    date_from = _parse_date(request.args.get("from", ""))
+    date_to   = _parse_date(request.args.get("to",   ""))
+
+    preset_dates = _build_preset_dates()
+
+    if date_from is None and date_to is None:
+        active_preset = "all_time"
+    elif (date_from, date_to) == preset_dates["this_month"]:
+        active_preset = "this_month"
+    elif (date_from, date_to) == preset_dates["last_month"]:
+        active_preset = "last_month"
+    elif (date_from, date_to) == preset_dates["last_3_months"]:
+        active_preset = "last_3_months"
+    else:
+        active_preset = "custom"
+
+    if date_from and date_to:
+        filter_label = f"{_fmt_date(date_from)} – {_fmt_date(date_to)}"
+    elif date_from:
+        filter_label = f"From {_fmt_date(date_from)}"
+    elif date_to:
+        filter_label = f"Until {_fmt_date(date_to)}"
+    else:
+        filter_label = "All time"
+
     user            = get_user_by_id(session["user_id"])
-    summary         = get_expense_summary(session["user_id"])
-    categories      = get_expenses_by_category(session["user_id"])
-    recent_expenses = get_recent_expenses(session["user_id"])
+    summary         = get_expense_summary(session["user_id"], date_from, date_to)
+    categories      = get_expenses_by_category(session["user_id"], date_from, date_to)
+    recent_expenses = get_recent_expenses(session["user_id"], date_from=date_from, date_to=date_to)
     member_since    = datetime.strptime(user["created_at"][:7], "%Y-%m").strftime("%B %Y")
-    return render_template("profile.html", user=user, summary=summary,
-                           categories=categories, recent_expenses=recent_expenses,
-                           member_since=member_since)
+
+    return render_template(
+        "profile.html",
+        user=user, summary=summary, categories=categories,
+        recent_expenses=recent_expenses, member_since=member_since,
+        date_from=date_from, date_to=date_to,
+        active_preset=active_preset, filter_label=filter_label,
+        preset_dates=preset_dates,
+    )
 
 
 @app.route("/expenses/add")
