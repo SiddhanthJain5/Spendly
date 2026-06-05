@@ -25,6 +25,35 @@
             </div>
         </div>
 
+        <!-- ── Date filter bar ─────────────────────────────────────────── -->
+        <div class="filter-bar">
+            <div class="filter-presets">
+                <a href="{{ url_for('profile') }}"
+                   class="filter-btn{% if active_preset == 'all_time' %} filter-btn--active{% endif %}">
+                    All Time
+                </a>
+                <a href="{{ url_for('profile', **{'from': preset_dates.this_month[0], 'to': preset_dates.this_month[1]}) }}"
+                   class="filter-btn{% if active_preset == 'this_month' %} filter-btn--active{% endif %}">
+                    This Month
+                </a>
+                <a href="{{ url_for('profile', **{'from': preset_dates.last_month[0], 'to': preset_dates.last_month[1]}) }}"
+                   class="filter-btn{% if active_preset == 'last_month' %} filter-btn--active{% endif %}">
+                    Last Month
+                </a>
+                <a href="{{ url_for('profile', **{'from': preset_dates.last_3_months[0], 'to': preset_dates.last_3_months[1]}) }}"
+                   class="filter-btn{% if active_preset == 'last_3_months' %} filter-btn--active{% endif %}">
+                    Last 3 Months
+                </a>
+            </div>
+            <form class="custom-range" method="get" action="{{ url_for('profile') }}">
+                <input type="date" name="from" value="{{ date_from or '' }}">
+                <span class="custom-range-sep">–</span>
+                <input type="date" name="to" value="{{ date_to or '' }}">
+                <button type="submit" class="filter-apply">Apply</button>
+            </form>
+        </div>
+        <p class="filter-label">Showing: {{ filter_label }}</p>
+
         <!-- ── Stats row ───────────────────────────────────────────── -->
         <div class="profile-stats">
             <div class="stat-card">

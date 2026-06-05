@@ -3,6 +3,9 @@ from werkzeug.security import generate_password_hash
 
 DB_PATH = "spendly.db"
 
+_DATE_FLOOR = '0000-01-01'
+_DATE_CEIL  = '9999-12-31'
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -68,44 +71,50 @@ def get_user_by_id(user_id):
         conn.close()
 
 
-def get_expenses_by_category(user_id):
+def get_expenses_by_category(user_id, date_from=None, date_to=None):
+    lo = date_from or _DATE_FLOOR
+    hi = date_to   or _DATE_CEIL
     conn = get_db()
     try:
         rows = conn.execute(
             """SELECT category,
                       COALESCE(SUM(amount), 0) AS total,
                       COUNT(*) AS count
-               FROM expenses WHERE user_id = ?
+               FROM expenses WHERE user_id = ? AND date BETWEEN ? AND ?
                GROUP BY category ORDER BY total DESC""",
-            (user_id,)
+            (user_id, lo, hi)
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
 
 
-def get_recent_expenses(user_id, limit=10):
+def get_recent_expenses(user_id, limit=10, date_from=None, date_to=None):
+    lo = date_from or _DATE_FLOOR
+    hi = date_to   or _DATE_CEIL
     conn = get_db()
     try:
         rows = conn.execute(
             """SELECT id, amount, category, date, description
-               FROM expenses WHERE user_id = ?
+               FROM expenses WHERE user_id = ? AND date BETWEEN ? AND ?
                ORDER BY date DESC, id DESC LIMIT ?""",
-            (user_id, limit)
+            (user_id, lo, hi, limit)
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
 
 
-def get_expense_summary(user_id):
+def get_expense_summary(user_id, date_from=None, date_to=None):
+    lo = date_from or _DATE_FLOOR
+    hi = date_to   or _DATE_CEIL
     conn = get_db()
     try:
         row = conn.execute(
             """SELECT COUNT(*) AS total_count,
                       COALESCE(SUM(amount), 0) AS total_amount
-               FROM expenses WHERE user_id = ?""",
-            (user_id,)
+               FROM expenses WHERE user_id = ? AND date BETWEEN ? AND ?""",
+            (user_id, lo, hi)
         ).fetchone()
         return {"total_count": row["total_count"], "total_amount": row["total_amount"]}
     finally:
