@@ -89,6 +89,7 @@
                         <span>Description</span>
                         <span>Category</span>
                         <span class="txn-amount-col">Amount</span>
+                        <span class="txn-action-col"></span>
                     </div>
                     {% for exp in recent_expenses %}
                     <div class="txn-row">
@@ -98,6 +99,11 @@
                             {{ exp.category }}
                         </span>
                         <span class="txn-amount">₹{{ "{:,.2f}".format(exp.amount) }}</span>
+                        <span class="txn-actions">
+                            <a href="{{ url_for('edit_expense', id=exp.id) }}" class="txn-edit" title="Edit expense" aria-label="Edit expense">
+                                <i data-lucide="pencil"></i>
+                            </a>
+                        </span>
                     </div>
                     {% endfor %}
                 </div>

@@ -2,9 +2,9 @@ import re
 import sqlite3
 import calendar
 from datetime import date, datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, abort, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.db import init_db, seed_db, create_user, create_expense, get_user_by_email, get_user_by_id, get_expense_summary, get_expenses_by_category, get_recent_expenses
+from database.db import init_db, seed_db, create_user, create_expense, get_user_by_email, get_user_by_id, get_expense_by_id, update_expense, get_expense_summary, get_expenses_by_category, get_recent_expenses
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-production"
@@ -46,6 +46,7 @@ def register():
     except sqlite3.IntegrityError:
         return render_template("register.html", error="An account with that email already exists.", name=name, email=email)
 
+    flash("Account created successfully! Sign in to continue.", "success")
     return redirect(url_for("login"))
 
 
@@ -230,12 +231,59 @@ def add_expense():
                            amount=amount_raw, category=category, expense_date=expense_date, description=description)
 
     create_expense(session["user_id"], amount, category, parsed_date, description or None)
+    flash("Expense added successfully.", "success")
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id, session["user_id"])
+    if expense is None:
+        abort(404)
+
+    today = date.today().isoformat()
+
+    def render_form(error=None, amount=None, category=None, expense_date=None, description=None):
+        return render_template(
+            "edit_expense.html", categories=CATEGORIES, today=today, expense=expense,
+            error=error,
+            amount=amount if amount is not None else expense["amount"],
+            category=category if category is not None else expense["category"],
+            date=expense_date if expense_date is not None else expense["date"],
+            description=description if description is not None else (expense["description"] or ""),
+        )
+
+    if request.method == "GET":
+        return render_form()
+
+    amount_raw   = request.form.get("amount", "").strip()
+    category     = request.form.get("category", "").strip()
+    expense_date = request.form.get("date", "").strip()
+    description  = request.form.get("description", "").strip()
+
+    try:
+        amount = float(amount_raw)
+        if amount <= 0:
+            raise ValueError
+    except ValueError:
+        return render_form(error="Enter a valid amount greater than zero.",
+                           amount=amount_raw, category=category, expense_date=expense_date, description=description)
+
+    if category not in CATEGORIES:
+        return render_form(error="Select a valid category.",
+                           amount=amount_raw, category=category, expense_date=expense_date, description=description)
+
+    parsed_date = _parse_date(expense_date)
+    if not parsed_date or date.fromisoformat(parsed_date) > date.today():
+        return render_form(error="Enter a valid date that is not in the future.",
+                           amount=amount_raw, category=category, expense_date=expense_date, description=description)
+
+    update_expense(id, session["user_id"], amount, category, parsed_date, description or None)
+    flash("Expense updated successfully.", "success")
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/delete")

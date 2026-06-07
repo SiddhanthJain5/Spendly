@@ -32,6 +32,19 @@
         </div>
     </nav>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="toast-container" id="toast-container">
+        {% for category, message in messages %}
+        <div class="toast toast-{{ category }}">
+            <span class="toast-message">{{ message }}</span>
+            <span class="toast-close" data-toast-close>✕</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
     <main class="main-content">
         {% block content %}{% endblock %}
     </main>

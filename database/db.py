@@ -83,6 +83,29 @@ def get_user_by_id(user_id):
         conn.close()
 
 
+def get_expense_by_id(expense_id, user_id):
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT * FROM expenses WHERE id = ? AND user_id = ?", (expense_id, user_id)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def update_expense(expense_id, user_id, amount, category, date, description):
+    conn = get_db()
+    try:
+        conn.execute(
+            "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+            "WHERE id = ? AND user_id = ?",
+            (amount, category, date, description, expense_id, user_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def get_expenses_by_category(user_id, date_from=None, date_to=None):
     lo = date_from or _DATE_FLOOR
     hi = date_to   or _DATE_CEIL
