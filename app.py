@@ -4,7 +4,7 @@ import calendar
 from datetime import date, datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, abort, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.db import init_db, seed_db, create_user, create_expense, get_user_by_email, get_user_by_id, get_expense_by_id, update_expense, get_expense_summary, get_expenses_by_category, get_recent_expenses
+from database.db import init_db, seed_db, create_user, create_expense, get_user_by_email, get_user_by_id, get_expense_by_id, update_expense, delete_expense as remove_expense, get_expense_summary, get_expenses_by_category, get_recent_expenses
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-production"
@@ -145,6 +145,11 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
+    user = get_user_by_id(session["user_id"])
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
     date_from = _parse_date(request.args.get("from", ""))
     date_to   = _parse_date(request.args.get("to",   ""))
 
@@ -170,7 +175,6 @@ def profile():
     else:
         filter_label = "All time"
 
-    user            = get_user_by_id(session["user_id"])
     summary         = get_expense_summary(session["user_id"], date_from, date_to)
     categories      = get_expenses_by_category(session["user_id"], date_from, date_to)
     recent_expenses = get_recent_expenses(session["user_id"], date_from=date_from, date_to=date_to)
@@ -286,9 +290,18 @@ def edit_expense(id):
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/delete")
+@app.route("/expenses/<int:id>/delete", methods=["POST"])
 def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id, session["user_id"])
+    if expense is None:
+        abort(404)
+
+    remove_expense(id, session["user_id"])
+    flash("Expense deleted.", "success")
+    return redirect(url_for("profile"))
 
 
 
