@@ -77,7 +77,12 @@
 
             <!-- Recent Transactions ─────────────────────────────── -->
             <div class="profile-card">
-                <h2 class="card-title">Recent Transactions</h2>
+                <div class="card-title-row">
+                    <h2 class="card-title">Recent Transactions</h2>
+                    <a href="{{ url_for('add_expense') }}" class="btn-primary">
+                        <i data-lucide="plus-circle"></i> Add Expense
+                    </a>
+                </div>
                 <div class="txn-table">
                     <div class="txn-head">
                         <span>Date</span>
@@ -119,13 +124,6 @@
                 </div>
             </div>
 
-        </div>
-
-        <!-- ── Quick actions ───────────────────────────────────────── -->
-        <div class="profile-actions">
-            <a href="{{ url_for('add_expense') }}" class="btn-primary">
-                <i data-lucide="plus-circle"></i> Add Expense
-            </a>
         </div>
 
         {% else %}

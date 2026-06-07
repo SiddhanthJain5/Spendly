@@ -141,6 +141,29 @@
     margin-bottom: 1.4rem;
 }
 
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.4rem;
+}
+
+.card-title-row .card-title { margin-bottom: 0; }
+
+.card-title-row .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.85rem;
+}
+
+.card-title-row .btn-primary svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+}
+
 /* ------------------------------------------------------------------ */
 /* Recent transactions table                                           */
 /* ------------------------------------------------------------------ */
@@ -371,28 +394,6 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Quick actions                                                       */
-/* ------------------------------------------------------------------ */
-
-.profile-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.profile-actions .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.profile-actions .btn-primary svg {
-    width: 16px;
-    height: 16px;
-    stroke: currentColor;
-}
-
-/* ------------------------------------------------------------------ */
 /* Responsive                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -423,8 +424,6 @@
     /* hide Category column on small screens */
     .txn-head span:nth-child(3),
     .txn-row .txn-cat-badge { display: none; }
-
-    .profile-actions { justify-content: center; }
 }
 
 /* ------------------------------------------------------------------ */
