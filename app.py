@@ -4,7 +4,7 @@ import calendar
 from datetime import date, datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.db import init_db, seed_db, create_user, get_user_by_email, get_user_by_id, get_expense_summary, get_expenses_by_category, get_recent_expenses
+from database.db import init_db, seed_db, create_user, create_expense, get_user_by_email, get_user_by_id, get_expense_summary, get_expenses_by_category, get_recent_expenses
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-production"
@@ -99,6 +99,9 @@ def logout():
     return redirect(url_for("landing"))
 
 
+CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+
+
 def _parse_date(s):
     if not s or not re.match(r'^\d{4}-\d{2}-\d{2}$', s):
         return None
@@ -182,9 +185,52 @@ def profile():
     )
 
 
-@app.route("/expenses/add")
+@app.route("/analytics")
+def analytics():
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    today = date.today().isoformat()
+
+    def render_form(error=None, amount="", category="", expense_date="", description=""):
+        return render_template("add_expense.html", categories=CATEGORIES, today=today,
+                               error=error, amount=amount, category=category,
+                               date=expense_date, description=description)
+
+    if request.method == "GET":
+        return render_form()
+
+    amount_raw   = request.form.get("amount", "").strip()
+    category     = request.form.get("category", "").strip()
+    expense_date = request.form.get("date", "").strip()
+    description  = request.form.get("description", "").strip()
+
+    try:
+        amount = float(amount_raw)
+        if amount <= 0:
+            raise ValueError
+    except ValueError:
+        return render_form(error="Enter a valid amount greater than zero.",
+                           amount=amount_raw, category=category, expense_date=expense_date, description=description)
+
+    if category not in CATEGORIES:
+        return render_form(error="Select a valid category.",
+                           amount=amount_raw, category=category, expense_date=expense_date, description=description)
+
+    parsed_date = _parse_date(expense_date)
+    if not parsed_date or date.fromisoformat(parsed_date) > date.today():
+        return render_form(error="Enter a valid date that is not in the future.",
+                           amount=amount_raw, category=category, expense_date=expense_date, description=description)
+
+    create_expense(session["user_id"], amount, category, parsed_date, description or None)
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/edit")

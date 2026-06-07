@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<section class="cs-page">
+    <span class="cs-blob cs-blob--tl"></span>
+    <span class="cs-blob cs-blob--br"></span>
+
+    <div class="cs-card">
+        <span class="cs-corner cs-corner--tr"></span>
+        <span class="cs-corner cs-corner--bl"></span>
+
+        <div class="cs-icon-wrap">
+            <span class="cs-icon-glow"></span>
+            <div class="cs-icon">
+                <i data-lucide="clock"></i>
+            </div>
+        </div>
+
+        <span class="cs-badge">Coming Soon</span>
+
+        <h1 class="cs-title">Advanced Analytics</h1>
+        <p class="cs-body">
+            We're working on powerful insights and visualizations to help you
+            understand your spending patterns better.
+        </p>
+
+        <div class="cs-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <p class="cs-caption">We're crafting something special</p>
+
+        <span class="cs-bottom-bar"></span>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>lucide.createIcons();</script>
+{% endblock %}
