@@ -175,7 +175,7 @@
 
 .txn-head {
     display: grid;
-    grid-template-columns: 95px 1fr 110px 85px 32px;
+    grid-template-columns: 95px 1fr 110px 85px 64px;
     gap: 0.75rem;
     padding-bottom: 0.6rem;
     border-bottom: 1.5px solid var(--border);
@@ -190,7 +190,7 @@
 
 .txn-row {
     display: grid;
-    grid-template-columns: 95px 1fr 110px 85px 32px;
+    grid-template-columns: 95px 1fr 110px 85px 64px;
     align-items: center;
     gap: 0.75rem;
     padding: 0.85rem 0;
@@ -236,6 +236,7 @@
 .txn-actions {
     display: flex;
     justify-content: flex-end;
+    gap: 0.25rem;
 }
 
 .txn-edit {
@@ -255,6 +256,35 @@
 }
 
 .txn-edit i {
+    width: 16px;
+    height: 16px;
+}
+
+.txn-delete-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.txn-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    color: var(--ink-faint);
+    transition: background 0.15s, color 0.15s;
+}
+
+.txn-delete:hover {
+    color: var(--danger);
+    background: var(--danger-light);
+}
+
+.txn-delete i {
     width: 16px;
     height: 16px;
 }

@@ -106,6 +106,18 @@ def update_expense(expense_id, user_id, amount, category, date, description):
         conn.close()
 
 
+def delete_expense(expense_id, user_id):
+    conn = get_db()
+    try:
+        conn.execute(
+            "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def get_expenses_by_category(user_id, date_from=None, date_to=None):
     lo = date_from or _DATE_FLOOR
     hi = date_to   or _DATE_CEIL
