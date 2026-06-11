@@ -1,3 +1,4 @@
+import os
 import re
 import sqlite3
 import calendar
@@ -7,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from database.db import init_db, seed_db, create_user, create_expense, get_user_by_email, get_user_by_id, get_expense_by_id, update_expense, delete_expense as remove_expense, get_expense_summary, get_expenses_by_category, get_recent_expenses
 
 app = Flask(__name__)
-app.secret_key = "dev-secret-change-in-production"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
 
 with app.app_context():
     init_db()
@@ -73,6 +74,8 @@ def login():
 
 @app.route("/dev/autologin")
 def dev_autologin():
+    if not app.debug:
+        abort(404)
     user = get_user_by_email("demo@spendly.com")
     if user:
         session["user_id"]   = user["id"]
