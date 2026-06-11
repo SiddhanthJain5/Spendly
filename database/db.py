@@ -1,7 +1,8 @@
+import os
 import sqlite3
 from werkzeug.security import generate_password_hash
 
-DB_PATH = "spendly.db"
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "spendly.db")
 
 _DATE_FLOOR = '0000-01-01'
 _DATE_CEIL  = '9999-12-31'
